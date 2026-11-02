@@ -2,15 +2,16 @@
 
 ## Purpose and safety boundary
 
-This plan verifies the complete React/Flask/MySQL workflow without changing
-the existing `sports_tournament_management` database. **No end-to-end write
-tests have been executed.** The current application has no authentication, so
-the test backend and frontend must bind to loopback/private interfaces and must
-not be exposed to a shared network.
+This plan describes verification of the React/Flask/MySQL workflow without
+changing the existing `sports_tournament_management` database. The real-MySQL
+API workflow has since been executed against the isolated test database; see
+[PHASE_8_E2E_TEST_REPORT.md](./PHASE_8_E2E_TEST_REPORT.md). The current
+application has no authentication, so the test backend and frontend must bind
+to loopback/private interfaces and must not be exposed to a shared network.
 
-The plan uses fresh, uniquely named test records in an isolated MySQL instance.
-It does not use or overwrite project sample records. Do not run these workflow
-steps against the existing project database.
+The test uses uniquely named records in a separate schema on the configured
+MySQL server. It does not use or overwrite project sample records. Do not run
+these workflow steps against the existing project database.
 
 ## Test environment isolation
 
@@ -56,6 +57,21 @@ until results are reviewed; cleanup requires separate approval. Caller-side
 rollback cannot undo API requests because each request commits its own
 connection.
 
+Windows CMD launch configuration (in separate terminals):
+
+```bat
+cd backend
+set DB_NAME=sports_tournament_management_phase8_test
+set FRONTEND_ORIGINS=http://localhost:5173
+.\.venv\Scripts\python.exe run.py
+```
+
+```bat
+cd frontend
+set VITE_API_URL=http://127.0.0.1:5000/api
+npm run dev
+```
+
 #### Setup verification completed
 
 The helper was run with `--create` against the configured MySQL server. It
@@ -66,7 +82,7 @@ one test department fixture. Flask was then configured in-process with
 10 read-only API GETs confirmed the selected database and successful
 connection. Dashboard counts were all zero. No workflow API POST/PUT/PATCH
 requests or end-to-end write tests were run. The existing project database
-was not selected by the setup script.
+was not selected by the setup script. The fixture department ID is `1`.
 
 ## End-to-end workflow
 
@@ -141,45 +157,41 @@ operations. It does **not** make writes to MySQL. Current tests cover:
 - Route registration without authentication; health and dashboard are
   accessible without a bearer token.
 
-These are useful unit-level checks, not proof that MySQL constraints, triggers,
-views, procedures, connector behavior, frontend forms, or the full workflow
-work together against a real database.
+These are useful unit-level checks. The opt-in real-MySQL workflow is now
+implemented in `backend/tests/test_phase8_integration.py`; its execution
+results and scope are recorded in the
+[Phase 8 report](./PHASE_8_E2E_TEST_REPORT.md).
 
 ## Missing coverage and integration risks
 
-1. **No safe full-flow MySQL integration test exists.** Current tests mock SQL;
-   none proves that all workflow operations commit correctly on MySQL 8.0.46.
-2. **No existing department write API.** Team creation requires a department,
+1. **No existing department write API.** Team creation requires a department,
    so the test database needs the one-time setup fixture described above.
-3. **Two teams are mandatory for the requested team match.** One team created
+2. **Two teams are mandatory for the requested team match.** One team created
    and registered alone cannot satisfy the match's minimum two-participant
    requirement. The test creates a second team and registers it.
-4. **No registration-capacity field or enforcement exists.** The schema has no
+3. **No registration-capacity field or enforcement exists.** The schema has no
    maximum-capacity column. Registration closes at `start_date`; a registration
    deadline separate from the start date is not supported.
-5. **No individual-tournament registration API exists.** This plan tests a team
+4. **No individual-tournament registration API exists.** This plan tests a team
    tournament; individual entry creation is outside this workflow/API.
-6. **Publication and sport activity affect public data.** Standings use a
+5. **Publication and sport activity affect public data.** Standings use a
    stored procedure that rejects tournaments not visible through
    `vw_published_tournaments`, which requires a published tournament and active
    sport. Use `is_published=true` and an active test sport.
-7. **Match completion and tournament completion are distinct.** Results mark a
+6. **Match completion and tournament completion are distinct.** Results mark a
    match completed; the tournament-winners report filters tournaments whose
    own status is completed. Do not expect a winner-report row before the
    explicit tournament-status step.
-8. **Database scripts hard-code the production-named schema.** Use a separate
-   MySQL instance/port as described; do not rely on an alternate database name
-   alone.
-9. **The application has no authentication.** Keep both test servers local
+7. **The application has no authentication.** Keep both test servers local
    and use only disposable test data.
-10. **UI plus API assertions are both needed.** Unit tests do not exercise
-    React forms, response refresh behavior, API CORS, or actual MySQL error
-    responses for duplicate keys, foreign keys, and trigger signals.
+8. **The automated integration test is API-level.** It uses Flask's test
+   client against real MySQL; it does not automate browser interaction, React
+   forms, response refresh behavior, or CORS preflight behavior.
 
-## Execution gate
+## Execution record
 
-This document is a plan only. Before a later end-to-end test run, verify the
-test database host/port and database name independently, confirm the frontend
-uses the local test API, and obtain approval to execute writes against that
-disposable instance. If isolation is uncertain, do not proceed. No SQL or API
-write operations have been run as part of preparing this plan.
+The integration test requires `RUN_PHASE8_INTEGRATION=1` and
+`DB_NAME=sports_tournament_management_phase8_test`. It checks
+`SELECT DATABASE()` on every MySQL connection and aborts unless the isolated
+schema is selected. Test records are retained; cleanup requires separate
+approval. Refer to the execution report before repeating the workflow.

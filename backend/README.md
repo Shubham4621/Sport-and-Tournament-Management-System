@@ -149,3 +149,19 @@ python -m unittest discover -s tests -v
 These tests do not write to the configured MySQL database. Database reads can
 be smoke-tested after setting `.env`, but no live write test should use the
 existing project/sample records.
+
+### Isolated Phase 8 MySQL workflow
+
+After provisioning `sports_tournament_management_phase8_test`, run the
+real-MySQL workflow test from this folder:
+
+```bat
+set DB_NAME=sports_tournament_management_phase8_test
+set RUN_PHASE8_INTEGRATION=1
+.\.venv\Scripts\python.exe -m unittest tests.test_phase8_integration -v
+```
+
+The test refuses to run unless `DB_NAME` is exactly the isolated database and
+checks `SELECT DATABASE()` on every MySQL connection before application SQL.
+It creates uniquely named records and intentionally retains them; it does not
+clean up test data. Never point it at `sports_tournament_management`.
