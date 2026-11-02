@@ -362,8 +362,23 @@ export function MatchDetails() {
             <div><span>Participants</span><strong>{participants.length || match.participant_count}</strong></div>
             <div><span>Round</span><strong>{match.round_name || "—"}</strong></div>
           </div>
-          <Panel title="Participants">
-            {participants.length ? <div className="participant-chips">{participants.map((participant) => <span className="participant-chip" key={participant.entry_id}>{participant.team_name || participant.player_name || `Entry ${participant.entry_id}`}</span>)}</div> : <div className="compact-empty">No participants have been assigned to this fixture.</div>}
+          <Panel title="Participants and playing squads">
+            {participants.length ? (
+              <div className="match-squads">
+                {participants.map((participant) => (
+                  <div className="match-squad" key={participant.entry_id}>
+                    <strong>{participant.team_name || participant.player_name || `Entry ${participant.entry_id}`}</strong>
+                    {participant.team_name ? (
+                      participant.roster_players?.length ? (
+                        <div className="participant-chips roster-chips">
+                          {participant.roster_players.map((playerName) => <span className="participant-chip" key={playerName}>{playerName}</span>)}
+                        </div>
+                      ) : <span className="table-subtext">No players assigned</span>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+            ) : <div className="compact-empty">No participants have been assigned to this fixture.</div>}
           </Panel>
           <Panel title="Scores and result management" className="results-panel">
             {participants.length < 2 ? <div className="compact-empty">At least two match participants are required before recording scores or results.</div> : (

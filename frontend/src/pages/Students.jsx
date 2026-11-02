@@ -125,6 +125,20 @@ export default function Students() {
     });
   }
 
+  function changeFilter(filterName, value) {
+    const nextFilters = {
+      department_id: departmentFilter,
+      has_player: playerFilter,
+      sport_id: sportFilter,
+    };
+    nextFilters[filterName] = value;
+
+    if (filterName === "department_id") setDepartmentFilter(value);
+    if (filterName === "has_player") setPlayerFilter(value);
+    if (filterName === "sport_id") setSportFilter(value);
+    load(1, search, nextFilters);
+  }
+
   async function createPlayer(student) {
     try {
       await api.createPlayer(student.student_id);
@@ -180,9 +194,9 @@ export default function Students() {
       <Panel title="Student directory" action={<span className="record-count">{response.total} records</span>}>
         <form className="table-toolbar toolbar-wrap" onSubmit={searchStudents}>
           <div className="search-field"><Search size={17} /><input value={searchInput} onChange={(event) => setSearchInput(event.target.value)} placeholder="Search students…" aria-label="Search students" /></div>
-          <label className="filter-control"><span>Department</span><select value={departmentFilter} onChange={(event) => setDepartmentFilter(event.target.value)}><option value="">All departments</option>{departments.map((department) => <option value={department.department_id} key={department.department_id}>{department.department_name}</option>)}</select></label>
-          <label className="filter-control"><span>Player profile</span><select value={playerFilter} onChange={(event) => setPlayerFilter(event.target.value)}><option value="">All students</option><option value="true">Players</option><option value="false">Non-players</option></select></label>
-          <label className="filter-control"><span>Sport eligibility</span><select value={sportFilter} onChange={(event) => setSportFilter(event.target.value)}><option value="">Any sport</option>{sports.map((sport) => <option value={sport.sport_id} key={sport.sport_id}>{sport.name}</option>)}</select></label>
+          <label className="filter-control"><span>Department</span><select value={departmentFilter} onChange={(event) => changeFilter("department_id", event.target.value)}><option value="">All departments</option>{departments.map((department) => <option value={department.department_id} key={department.department_id}>{department.department_name}</option>)}</select></label>
+          <label className="filter-control"><span>Player profile</span><select value={playerFilter} onChange={(event) => changeFilter("has_player", event.target.value)}><option value="">All students</option><option value="true">Players</option><option value="false">Non-players</option></select></label>
+          <label className="filter-control"><span>Sport eligibility</span><select value={sportFilter} onChange={(event) => changeFilter("sport_id", event.target.value)}><option value="">Any sport</option>{sports.map((sport) => <option value={sport.sport_id} key={sport.sport_id}>{sport.name}</option>)}</select></label>
           <button className="button button-secondary" type="submit">Search</button>
           {(search || departmentFilter || playerFilter || sportFilter) && <button className="button button-quiet" type="button" onClick={() => { setSearch(""); setSearchInput(""); setDepartmentFilter(""); setPlayerFilter(""); setSportFilter(""); load(1, "", {}); }}>Clear</button>}
         </form>

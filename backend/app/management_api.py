@@ -1656,8 +1656,28 @@ def match_participants(match_id):
                 "text_value": score["text_value"],
             }
         )
+    team_ids = sorted({participant["team_id"] for participant in participants if participant["team_id"]})
+    roster_by_team = {team_id: [] for team_id in team_ids}
+    if team_ids:
+        placeholders = ", ".join(["%s"] * len(team_ids))
+        roster_rows = fetch_all(
+            f"""
+            SELECT tm.team_id,
+                   CONCAT_WS(' ', student.first_name, student.last_name) AS player_name
+            FROM Team_Memberships tm
+            JOIN Players player ON player.player_id = tm.player_id
+            JOIN Students student ON student.student_id = player.student_id
+            WHERE tm.team_id IN ({placeholders})
+              AND tm.membership_to IS NULL
+            ORDER BY tm.team_id, student.first_name, student.last_name
+            """,
+            tuple(team_ids),
+        )
+        for roster_row in roster_rows:
+            roster_by_team[roster_row["team_id"]].append(roster_row["player_name"])
     for participant in participants:
         participant["scores"] = scores_by_entry.get(participant["entry_id"], [])
+        participant["roster_players"] = roster_by_team.get(participant["team_id"], [])
     return jsonify(match=match, participants=participants)
 
 
